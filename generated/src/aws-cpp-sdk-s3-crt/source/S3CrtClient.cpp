@@ -363,7 +363,7 @@ static void S3CrtRequestFinishCallback(struct aws_s3_meta_request *meta_request,
     }
   }
 
-  if (meta_request_result->error_code || meta_request_result->response_status != static_cast<int>(Aws::Http::HttpResponseCode::OK))
+  if (meta_request_result->error_code || (meta_request_result->response_status != static_cast<int>(Aws::Http::HttpResponseCode::OK) && meta_request_result->response_status != static_cast<int>(Aws::Http::HttpResponseCode::PARTIAL_CONTENT)))
   {
     AWS_LOGSTREAM_ERROR(S3CrtClient::ALLOCATION_TAG, "S3CrtClient received error response for s3_meta_request with response code: " << meta_request_result->response_status
       << ", with error_code: " << meta_request_result->error_code);
@@ -528,7 +528,7 @@ void S3CrtClient::GetObjectAsync(const GetObjectRequest& request, const GetObjec
     return handler(this, request, GetObjectOutcome(Aws::Client::AWSError<S3CrtErrors>(S3CrtErrors::INVALID_PARAMETER_VALUE, "INVALID_PARAMETER_VALUE", "Output stream in bad state", false)), handlerContext);
   }
   options.shutdown_callback = GetObjectRequestShutdownCallback;
-  options.type = AWS_S3_META_REQUEST_TYPE_GET_OBJECT;
+  options.type = request.PartNumberHasBeenSet() ? AWS_S3_META_REQUEST_TYPE_DEFAULT : AWS_S3_META_REQUEST_TYPE_GET_OBJECT;
   struct aws_signing_config_aws signing_config_override = m_s3CrtSigningConfig;
   if (endpointResolutionOutcome.GetResult().GetAttributes() && endpointResolutionOutcome.GetResult().GetAttributes()->authScheme.GetSigningRegion()) {
     signing_config_override.region = Aws::Crt::ByteCursorFromCString(endpointResolutionOutcome.GetResult().GetAttributes()->authScheme.GetSigningRegion()->c_str());
